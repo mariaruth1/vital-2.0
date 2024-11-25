@@ -74,7 +74,7 @@ class _MainPageState extends State<MainPage> {
         selectedItemColor: Colors.grey[900],
         unselectedItemColor: Colors.grey[500],
         onTap: _onNavBarTapped,  // Handle tap on nav bar items
-        items: [
+        items: const [
           BottomNavigationBarItem(icon: Icon(Icons.calendar_month), label: 'Calendar'),
           BottomNavigationBarItem(icon: Icon(Icons.trip_origin), label: 'Cycle'),
           BottomNavigationBarItem(icon: Icon(Icons.leaderboard), label: 'Analytics'),

@@ -5,56 +5,93 @@ import 'package:scrollable_clean_calendar/scrollable_clean_calendar.dart';
 import 'package:scrollable_clean_calendar/utils/enums.dart';
 import 'package:scrollable_clean_calendar/utils/extensions.dart';
 
-class VitalCalendar extends StatelessWidget {
+class VitalCalendar extends StatefulWidget {
   const VitalCalendar({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<VitalCalendar> createState() => _VitalCalendarState();
+}
 
-    final DateTime today = DateTime.now();
+class _VitalCalendarState extends State<VitalCalendar> {
+  late CleanCalendarController calendarController;
+  final DateTime today = DateTime.now();
+  final List<String> weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  DateTime selectedDate = DateTime.now();
 
-    final CleanCalendarController calendarController = CleanCalendarController(
+  @override
+  void initState() {
+    super.initState();
+    initializeController();
+  }
+
+  void initializeController() {
+    calendarController = CleanCalendarController(
       initialFocusDate: today,
       initialDateSelected: today,
-      minDate: today.subtract(Duration(days: (365 * 12))),
-      maxDate: today.add(Duration(days: 365)),
+      minDate: today.subtract(const Duration(days: 3650)),
+      maxDate: today.add(const Duration(days: 90)),
       rangeMode: false,
       onDayTapped: (date) {
-        // TODO
+       date.isSameDayOrBefore(today) ? selectedDate = date : selectedDate = selectedDate;
       },
     );
+  }
 
-    return CustomScrollView(
-      slivers: [
-        SliverToBoxAdapter(
-          child: Container(
-            color: Colors.indigo[50],
-            padding: EdgeInsets.all(12.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Expanded(child: Center(child: Text('Mon', style: TextStyle(fontWeight: FontWeight.bold)))),
-                Expanded(child: Center(child: Text('Tue', style: TextStyle(fontWeight: FontWeight.bold)))),
-                Expanded(child: Center(child: Text('Wed', style: TextStyle(fontWeight: FontWeight.bold)))),
-                Expanded(child: Center(child: Text('Thu', style: TextStyle(fontWeight: FontWeight.bold)))),
-                Expanded(child: Center(child: Text('Fri', style: TextStyle(fontWeight: FontWeight.bold)))),
-                Expanded(child: Center(child: Text('Sat', style: TextStyle(fontWeight: FontWeight.bold)))),
-                Expanded(child: Center(child: Text('Sun', style: TextStyle(fontWeight: FontWeight.bold)))),
-              ],
+  void refreshCalendar() {
+    setState(() {
+      selectedDate = today;
+      initializeController(); // Reinitialize the controller
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Container(
+                color: Colors.indigo[50],
+                padding: EdgeInsets.all(12.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: weekdays
+                      .map((day) => Expanded(
+                    child: Center(
+                      child: Text(
+                        day,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ))
+                      .toList(),
+                ),
+              ),
             ),
-          ),
+            SliverFillRemaining(
+              child: ScrollableCleanCalendar(
+                calendarController: calendarController,
+                layout: Layout.DEFAULT,
+                showWeekdays: false,
+                monthBuilder: (context, month) => buildMonth(month),
+                dayBuilder: (context, dates) => buildDay(dates, selectedDate),
+              ),
+            ),
+          ],
         ),
-        SliverFillRemaining(
-          child: ScrollableCleanCalendar(
-            calendarController: calendarController,
-            layout: Layout.DEFAULT,
-            showWeekdays: false,
-            monthBuilder: (context, month) {
-              return buildMonth(month);
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton(
+            shape: const CircleBorder(),
+            splashColor: Colors.indigo[100],
+            onPressed: () {
+              calendarController.jumpToMonth(date: today);
+              refreshCalendar(); // Trigger full refresh
             },
-            dayBuilder: (context, dates) {
-              return buildDay(dates, today);
-            },
+            backgroundColor: Colors.indigo[50],
+            child: const Icon(Icons.today),
           ),
         ),
       ],
@@ -63,42 +100,50 @@ class VitalCalendar extends StatelessWidget {
 
   Column buildMonth(String month) {
     return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Divider(thickness: 1, color: Colors.grey[350]),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Text(
-              '${month}',
-              style: TextStyle(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Divider(thickness: 1, color: Colors.grey[350]),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(
+            '${month}',
+            style: TextStyle(
                 color: Colors.grey[800],
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold),
-            ),
+                fontSize: 18,
+                fontWeight: FontWeight.bold),
           ),
-          Divider(thickness: 1, color: Colors.grey[350]),
-        ],
-      );
+        ),
+        Divider(thickness: 1, color: Colors.grey[350]),
+      ],
+    );
   }
 
-  Container buildDay(DayValues dates, DateTime today) {
+  Container buildDay(DayValues dates, DateTime selectedDate) {
+    bool isFuture = dates.day.isAfter(today);
+    bool isToday = dates.day.isSameDay(today);
+    bool isSelected = dates.day.isSameDay(selectedDate) && !isFuture;
+
     return Container(
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: dates.isSelected ? Colors.grey.shade500 : Colors.transparent,
-            width: 2,
-          ),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: isToday
+            ? Colors.indigo.shade50 // Light indigo for today
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(50),
+        border: Border.all(
+          color: isSelected ? Colors.grey.shade500 : Colors.transparent,
+          width: 2, // Border for selected days
         ),
-        child: Text(
-          '${dates.day.day}',
-          style: TextStyle(
-            fontSize: dates.isSelected ? 18 : 16,
-            color: dates.day.isSameDayOrBefore(today) ? Colors.black : DefaultSelectionStyle.defaultColor,
-            fontWeight: dates.isSelected ? FontWeight.bold : FontWeight.normal
-          ),
+      ),
+      child: Text(
+        '${dates.day.day}',
+        style: TextStyle(
+          fontSize: isToday ? 18 : 16, // Slightly larger font for today
+          color: isFuture ? Colors.grey.shade400 : Colors.black, // Grey out future dates
+          fontWeight: isSelected || isToday ? FontWeight.bold : FontWeight.normal,
         ),
-      );
+      ),
+    );
   }
+
 }
