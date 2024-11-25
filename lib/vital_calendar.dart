@@ -5,6 +5,8 @@ import 'package:scrollable_clean_calendar/scrollable_clean_calendar.dart';
 import 'package:scrollable_clean_calendar/utils/enums.dart';
 import 'package:scrollable_clean_calendar/utils/extensions.dart';
 
+import 'flow_tracking_dialog.dart';
+
 class VitalCalendar extends StatefulWidget {
   const VitalCalendar({super.key});
 
@@ -15,7 +17,15 @@ class VitalCalendar extends StatefulWidget {
 class _VitalCalendarState extends State<VitalCalendar> {
   late CleanCalendarController calendarController;
   final DateTime today = DateTime.now();
-  final List<String> weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  final List<String> weekdays = [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun'
+  ];
   DateTime selectedDate = DateTime.now();
 
   @override
@@ -32,7 +42,13 @@ class _VitalCalendarState extends State<VitalCalendar> {
       maxDate: today.add(const Duration(days: 90)),
       rangeMode: false,
       onDayTapped: (date) {
-       date.isSameDayOrBefore(today) ? selectedDate = date : selectedDate = selectedDate;
+        if (date.isSameDayOrBefore(today)) {
+          setState(() {
+            selectedDate = date;
+          });
+          showPeriodFlowDialog(
+              context, selectedDate); // Invoke the dialog function with context
+        }
       },
     );
   }
@@ -40,8 +56,20 @@ class _VitalCalendarState extends State<VitalCalendar> {
   void refreshCalendar() {
     setState(() {
       selectedDate = today;
-      initializeController(); // Reinitialize the controller
+      initializeController();
     });
+  }
+
+  void showPeriodFlowDialog(BuildContext context, DateTime selectedDate) async {
+    final result = await showDialog<int>(
+      context: context,
+      builder: (context) => FlowTrackingDialog(selectedDate: selectedDate,),
+    );
+
+    if (result != null) {
+      // Handle selected flow
+      print('Selected Flow: $result');
+    }
   }
 
   @override
@@ -58,13 +86,14 @@ class _VitalCalendarState extends State<VitalCalendar> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: weekdays
                       .map((day) => Expanded(
-                    child: Center(
-                      child: Text(
-                        day,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ))
+                            child: Center(
+                              child: Text(
+                                day,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ))
                       .toList(),
                 ),
               ),
@@ -138,12 +167,14 @@ class _VitalCalendarState extends State<VitalCalendar> {
       child: Text(
         '${dates.day.day}',
         style: TextStyle(
-          fontSize: isToday ? 18 : 16, // Slightly larger font for today
-          color: isFuture ? Colors.grey.shade400 : Colors.black, // Grey out future dates
-          fontWeight: isSelected || isToday ? FontWeight.bold : FontWeight.normal,
+          fontSize: isToday ? 18 : 16,
+          // Slightly larger font for today
+          color: isFuture ? Colors.grey.shade400 : Colors.black,
+          // Grey out future dates
+          fontWeight:
+              isSelected || isToday ? FontWeight.bold : FontWeight.normal,
         ),
       ),
     );
   }
-
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:protein_tracker/vital_calendar.dart';
+import 'package:vital/vital_calendar.dart';
 
 void main() {
   runApp(const Vital());
